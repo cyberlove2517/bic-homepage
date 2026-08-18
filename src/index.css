@@ -1,0 +1,306 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   BIC Event Experience — design tokens (from bic branding.pdf)
+   Palette is strictly monochrome: paper / gray / ink + opacity.
+   ============================================================ */
+@layer base {
+  :root {
+    --ink: #1e1e1e;
+    --deep: #121212;
+    --lift: #2a2a2a;
+    --paper: #f2f2f2;
+    --gray: #8c8c8c;
+
+    --paper-75: rgba(242, 242, 242, 0.75);
+    --paper-50: rgba(242, 242, 242, 0.5);
+    --paper-30: rgba(242, 242, 242, 0.3);
+    --gray-75: rgba(140, 140, 140, 0.75);
+    --gray-50: rgba(140, 140, 140, 0.5);
+    --gray-30: rgba(140, 140, 140, 0.3);
+    --ink-75: rgba(30, 30, 30, 0.75);
+    --ink-50: rgba(30, 30, 30, 0.5);
+
+    --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--gray-30);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  ::selection {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  /* Eyebrow label with hairline + dot terminal — brand motif */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gray);
+  }
+  .eyebrow::before {
+    content: "";
+    width: 2.5rem;
+    height: 1px;
+    background: var(--gray-50);
+  }
+  .eyebrow::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: var(--gray);
+    flex: none;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--paper);
+    padding: 1rem 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    transition: background 0.35s var(--ease-out-expo), color 0.35s var(--ease-out-expo);
+  }
+  .btn-primary:hover {
+    background: transparent;
+    color: var(--paper);
+  }
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: transparent;
+    color: var(--paper);
+    border: 1px solid var(--gray-50);
+    padding: 1rem 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    transition: border-color 0.35s var(--ease-out-expo), background 0.35s var(--ease-out-expo);
+  }
+  .btn-ghost:hover {
+    border-color: var(--paper);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-variation-settings: "wdth" 100;
+  }
+  .text-paper-75 { color: var(--paper-75); }
+  .text-paper-50 { color: var(--paper-50); }
+  .text-paper-30 { color: var(--paper-30); }
+  .text-gray-brand { color: var(--gray); }
+  .bg-deep { background: var(--deep); }
+  .bg-lift { background: var(--lift); }
+  .border-hairline { border-color: var(--gray-30); }
+  .tracking-brand { letter-spacing: 0.28em; }
+
+  /* C-arc motif — concentric arcs bleeding off-frame */
+  .c-arc {
+    position: absolute;
+    border: 1px solid var(--paper-30);
+    border-radius: 9999px;
+    pointer-events: none;
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s var(--ease-out-expo), transform 0.8s var(--ease-out-expo);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Dot spark — ignited state glow (used once per viewport max) */
+  .dot-spark {
+    box-shadow: 0 0 18px 4px rgba(242, 242, 242, 0.45);
+  }
+
+  /* Service glyphs — hover animates the glyph + its dot, never the card */
+  .service-glyph {
+    transition:
+      transform 0.6s var(--ease-out-expo),
+      color 0.5s var(--ease-out-expo);
+    transform-origin: 50% 60%;
+  }
+  .group:hover .service-glyph {
+    transform: translateY(-3px) scale(1.08);
+  }
+  .group:hover .service-glyph .icon-dot {
+    animation: glyph-dot-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes glyph-dot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .group:hover .service-glyph { transform: none; }
+    .group:hover .service-glyph .icon-dot { animation: none; }
+  }
+
+  /* ==========================================================
+     Archive drawer system — noir industrial filing hardware.
+     Form/material follows the client's wide-drawer reference
+     asset; text is live HTML, not baked raster.
+     ========================================================== */
+  .drawer-face {
+    /* brushed dark metal: layered gradients fake the grain + worn sheen */
+    background:
+      linear-gradient(105deg, rgba(242, 242, 242, 0.055) 0%, rgba(242, 242, 242, 0.015) 22%, transparent 40%),
+      repeating-linear-gradient(90deg, rgba(242, 242, 242, 0.022) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, #2e2e2e 0%, #262626 55%, #202020 100%);
+    border: 1px solid var(--gray-50);
+    box-shadow:
+      inset 0 1px 0 rgba(242, 242, 242, 0.09),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+      0 2px 6px rgba(0, 0, 0, 0.45);
+    /* GSAP owns `transform` (open/close timeline); hover forward-motion
+       uses the composable `translate` property so the two never fight */
+    transition:
+      box-shadow 0.5s var(--ease-out-expo),
+      translate 0.4s var(--ease-out-expo);
+  }
+  .drawer-face:hover {
+    translate: 0 3px; /* drawer nudges forward 2–4px toward the viewer */
+    box-shadow:
+      inset 0 1px 0 rgba(242, 242, 242, 0.14),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+      0 6px 14px rgba(0, 0, 0, 0.55);
+  }
+
+  .rivet {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 30%, #a8a8a8 0%, #565656 55%, #1a1a1a 100%);
+    box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.7), 0 1px 1px rgba(242, 242, 242, 0.06);
+  }
+
+  /* recessed label holder with metal frame */
+  .label-holder {
+    background: linear-gradient(180deg, #171717, #1d1d1d);
+    border: 1px solid rgba(140, 140, 140, 0.45);
+    box-shadow:
+      inset 0 2px 5px rgba(0, 0, 0, 0.65),
+      inset 0 -1px 0 rgba(242, 242, 242, 0.05),
+      0 1px 0 rgba(242, 242, 242, 0.07);
+    text-align: left;
+  }
+
+  /* pull handle — bar floating on two feet */
+  .drawer-handle {
+    position: relative;
+    width: 3.25rem;
+    height: 1.5rem;
+    display: block;
+    /* no CSS transition here — GSAP animates the pull */
+  }
+  .drawer-handle::before,
+  .drawer-handle::after {
+    content: "";
+    position: absolute;
+    top: 0.35rem;
+    width: 0.45rem;
+    height: 0.8rem;
+    background: linear-gradient(180deg, #8a8a8a, #4a4a4a);
+    box-shadow: inset 0 1px 0 rgba(242, 242, 242, 0.25);
+  }
+  .drawer-handle::before { left: 0.15rem; }
+  .drawer-handle::after { right: 0.15rem; }
+  .drawer-handle-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0.9rem;
+    height: 0.4rem;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #b5b5b5 0%, #6f6f6f 45%, #3d3d3d 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(242, 242, 242, 0.4),
+      0 3px 5px rgba(0, 0, 0, 0.6);
+  }
+  /* handle motion is driven by the GSAP drawer timeline;
+     CSS only carries the metal brightening when the drawer is out */
+  .drawer-face[aria-expanded="true"] .drawer-handle-bar {
+    background: linear-gradient(180deg, #f2f2f2 0%, #9a9a9a 45%, #565656 100%);
+  }
+
+  /* open tray — interior of the drawer, overlays rows below (grid stays stable) */
+  .drawer-body {
+    transform-style: preserve-3d;
+  }
+  .drawer-face[aria-expanded="true"] {
+    box-shadow:
+      inset 0 1px 0 rgba(242, 242, 242, 0.14),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+      0 22px 38px rgba(0, 0, 0, 0.6);
+  }
+  .drawer-tray-wrap {
+    filter: drop-shadow(0 26px 34px rgba(0, 0, 0, 0.65));
+  }
+  .drawer-tray {
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, transparent 18%),
+      linear-gradient(180deg, #161616, #1a1a1a);
+    box-shadow:
+      inset 0 6px 12px rgba(0, 0, 0, 0.6),
+      /* side walls of the drawer box */
+      inset 14px 0 18px -14px rgba(0, 0, 0, 0.9),
+      inset -14px 0 18px -14px rgba(0, 0, 0, 0.9),
+      inset 1px 0 0 rgba(242, 242, 242, 0.05),
+      inset -1px 0 0 rgba(242, 242, 242, 0.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
