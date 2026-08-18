@@ -8,7 +8,10 @@ export default defineConfig({
   base: './',
   plugins: [inspectAttr(), react()],
   server: {
-    port: 3000,
+    port: 7100,
+    // Allow Cloudflare quick tunnels and LAN previews
+    allowedHosts: true,
+    host: true,
   },
   resolve: {
     alias: {
