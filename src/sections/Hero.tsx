@@ -7,8 +7,11 @@ import { ArrowLink } from "../components/icons";
  * the lid opens, B·I·C rise out, and the brand dot escapes, arcs upward and
  * ignites as the "idea spark" — the literal moment of thinking outside the box.
  *
- * Default CSS state = final frame. GSAP only hides/replays when motion is OK,
- * so reduced-motion and no-JS both land on the resolved scene.
+ * Default CSS/SVG markup = final frame (open crate + BIC + spark + copy).
+ * GSAP only rewinds and plays when motion is allowed, so reduced-motion and
+ * no-JS both land on the resolved scene.
+ *
+ * Motion engine: GSAP (not Remotion / Lottie). SVG transforms only.
  */
 export default function Hero() {
   const root = useRef<HTMLElement>(null);
@@ -22,65 +25,163 @@ export default function Hero() {
 
     const start = () => {
       if (cancelled || !root.current) return;
+
       ctx = gsap.context(() => {
-        const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
-        tl.timeScale(0.85); // the reveal breathes ~15% slower — cinematic, not rushed
+        // Kill any leftover tweens from React StrictMode double-mount
+        gsap.killTweensOf([
+          ".hero-edge",
+          ".hero-lid-edge",
+          ".hero-letter",
+          ".hero-lid",
+          ".hero-glow",
+          ".hero-key",
+          ".hero-dot",
+          ".hero-dot-glow",
+          ".hero-shadow",
+          ".hero-ui",
+          ".hero-title",
+          ".hero-cue",
+        ]);
 
-        // --- initial hidden states
-        gsap.set(".hero-edge", { strokeDashoffset: 1 });
-        gsap.set(".hero-letter", { attr: { y: 330 }, opacity: 0 });
-        gsap.set(".hero-lid", { svgOrigin: "274 194", rotation: 0 });
-        gsap.set(".hero-glow", { opacity: 0 });
+        const tl = gsap.timeline({
+          defaults: { ease: "expo.out", overwrite: "auto" },
+        });
+        tl.timeScale(0.9);
+
+        // --- initial hidden / sealed states (from the final-frame markup)
+        // pathLength=1 + dasharray=1 → dashoffset 1 hides the stroke fully
+        gsap.set(".hero-edge, .hero-lid-edge", {
+          strokeDashoffset: 1,
+          opacity: 1,
+        });
+        gsap.set(".hero-letter", {
+          attr: { y: 300 },
+          opacity: 0,
+        });
+        // Hinge on the front top edge centre of the crate (SVG user units)
+        // Using transformOrigin in px relative to the <g> bbox is unreliable;
+        // svgOrigin pins the pivot in the SVG coordinate system.
+        gsap.set(".hero-lid", {
+          svgOrigin: "300 194",
+          rotation: 0,
+          opacity: 1,
+          transformBox: "fill-box",
+        });
+        gsap.set(".hero-glow", { opacity: 0, scale: 0.6, svgOrigin: "294 252" });
         gsap.set(".hero-key", { opacity: 0 });
-        // the dot begins as the period of the BIC. logo, NOT yet detached
-        gsap.set(".hero-dot", { attr: { cx: 366, cy: 152 }, fill: "#8c8c8c", opacity: 0, scale: 0.4, svgOrigin: "366 152" });
-        gsap.set(".hero-dot-glow", { opacity: 0, scale: 0.2, svgOrigin: "446 120" });
+        // Dot begins as the period of "BIC." — inside the logo, not yet detached
+        gsap.set(".hero-dot", {
+          attr: { cx: 366, cy: 152 },
+          fill: "#8c8c8c",
+          opacity: 0,
+          scale: 0.35,
+          svgOrigin: "366 152",
+        });
+        gsap.set(".hero-dot-glow", {
+          opacity: 0,
+          scale: 0.15,
+          svgOrigin: "446 120",
+        });
         gsap.set(".hero-shadow", { opacity: 0 });
-        gsap.set(".hero-ui", { opacity: 0, y: 28 });
-        gsap.set(".hero-title", { opacity: 0, y: 34 });
+        gsap.set(".hero-ui", { opacity: 0, y: 24 });
+        gsap.set(".hero-title", { opacity: 0, y: 28 });
         gsap.set(".hero-cue", { opacity: 0 });
+        gsap.set(".hero-lid-fill", { opacity: 0.25 });
 
-        // --- 1. darkness → the crate establishes itself under a restrained key light
-        tl.to(".hero-key", { opacity: 0.55, duration: 1.6, ease: "sine.out" }, 0.1)
-          .to(".hero-edge", { strokeDashoffset: 0, duration: 1.2, stagger: 0.07, ease: "power2.inOut" }, 0.2)
-          .to(".hero-shadow", { opacity: 0.55, duration: 0.8 }, 1.0)
+        // --- 1. darkness → crate establishes under a restrained key light
+        tl.to(".hero-key", { opacity: 0.55, duration: 1.4, ease: "sine.out" }, 0.05)
+          // body edges draw first (crate walls) — sealed box reads before lid moves
+          .to(
+            ".hero-edge",
+            {
+              strokeDashoffset: 0,
+              duration: 1.15,
+              stagger: 0.08,
+              ease: "power2.inOut",
+            },
+            0.15,
+          )
+          .to(
+            ".hero-lid-edge",
+            {
+              strokeDashoffset: 0,
+              duration: 0.9,
+              ease: "power2.inOut",
+            },
+            0.45,
+          )
+          .to(".hero-shadow", { opacity: 0.55, duration: 0.75 }, 0.9)
+          .to(".hero-lid-fill", { opacity: 0.4, duration: 0.5 }, 0.7)
 
-          // --- 2. the lid opens — boundaries separate
-          .to(".hero-lid", { rotation: -96, duration: 1.15, ease: "power2.inOut" }, 1.4)
-          .to(".hero-glow", { opacity: 0.9, duration: 0.9 }, 1.75)
-          .to(".hero-lid", { opacity: 0.35, duration: 0.8 }, 2.3)
+          // --- 2. lid opens — hinge on front edge, swings up/back toward viewer-left
+          .to(
+            ".hero-lid",
+            {
+              rotation: -108,
+              duration: 1.2,
+              ease: "power2.inOut",
+            },
+            1.35,
+          )
+          .to(".hero-glow", { opacity: 0.95, scale: 1, duration: 0.95, ease: "sine.out" }, 1.65)
+          .to(".hero-lid-fill", { opacity: 0.12, duration: 0.7 }, 1.9)
+          .to(".hero-lid", { opacity: 0.55, duration: 0.7 }, 2.15)
 
-          // --- 3. the BIC logo emerges from inside the box
-          .to(".hero-letter", { attr: { y: 158 }, opacity: 1, duration: 0.95, stagger: 0.16 }, 2.0)
+          // --- 3. BIC rises from inside the crate (clipped by box mouth)
+          .to(
+            ".hero-letter",
+            {
+              attr: { y: 158 },
+              opacity: 1,
+              duration: 0.95,
+              stagger: 0.14,
+              ease: "power3.out",
+            },
+            1.95,
+          )
 
-          // --- 4. the dot completes the logo… then visibly DETACHES from it,
-          //        travelling beyond the box boundary: the idea that got out
-          .to(".hero-dot", { opacity: 1, scale: 1, duration: 0.25 }, 3.15)
-          .to(".hero-dot", { attr: { cx: 392, cy: 84 }, duration: 0.34, ease: "power2.out" }, 3.55)
-          .to(".hero-dot", { attr: { cx: 446, cy: 120 }, duration: 0.3, ease: "power1.in" }, 3.89)
+          // --- 4. brand dot completes the logo, then detaches outside the box
+          .to(".hero-dot", { opacity: 1, scale: 1, duration: 0.28, ease: "back.out(1.6)" }, 3.05)
+          .to(
+            ".hero-dot",
+            { attr: { cx: 400, cy: 78 }, duration: 0.36, ease: "power2.out" },
+            3.45,
+          )
+          .to(
+            ".hero-dot",
+            { attr: { cx: 446, cy: 120 }, duration: 0.32, ease: "power1.inOut" },
+            3.81,
+          )
 
-          // --- 5. ignition — the dot becomes the idea spark (no lightbulb cliché)
-          .to(".hero-dot", { fill: "#f2f2f2", duration: 0.2 }, 4.2)
-          .to(".hero-dot-glow", { opacity: 0.85, scale: 1, duration: 0.55, ease: "expo.out" }, 4.2)
-          .to(".hero-dot-glow", { opacity: 0.35, scale: 1.35, duration: 0.7, ease: "sine.out" }, 4.75)
+          // --- 5. ignition — idea spark
+          .to(".hero-dot", { fill: "#f2f2f2", duration: 0.22 }, 4.15)
+          .to(
+            ".hero-dot-glow",
+            { opacity: 0.9, scale: 1, duration: 0.55, ease: "expo.out" },
+            4.15,
+          )
+          .to(
+            ".hero-dot-glow",
+            { opacity: 0.38, scale: 1.4, duration: 0.7, ease: "sine.out" },
+            4.7,
+          )
 
-          // --- 6. the concept is now clear WITHOUT words — a held beat…
-          //        only then does the headline appear
-          .to(".hero-title", { opacity: 1, y: 0, duration: 0.85 }, 5.0)
+          // --- 6. held beat, then headline
+          .to(".hero-title", { opacity: 1, y: 0, duration: 0.85 }, 5.05)
 
-          // --- 7. supporting copy + CTAs follow
-          .to(".hero-ui", { opacity: 1, y: 0, duration: 0.7, stagger: 0.12 }, 5.35)
-          .to(".hero-cue", { opacity: 1, duration: 0.8 }, 6.1);
+          // --- 7. supporting copy + CTAs
+          .to(".hero-ui", { opacity: 1, y: 0, duration: 0.7, stagger: 0.1 }, 5.4)
+          .to(".hero-cue", { opacity: 1, duration: 0.75 }, 6.05);
 
-        // --- ambient: the spark breathes, slowly, forever
+        // ambient spark breath
         gsap.to(".hero-dot-glow", {
-          opacity: 0.75,
-          scale: 1.15,
-          duration: 2,
+          opacity: 0.72,
+          scale: 1.18,
+          duration: 2.1,
           ease: "sine.inOut",
           repeat: -1,
           yoyo: true,
-          delay: 6.8,
+          delay: 6.7,
         });
       }, root);
     };
@@ -107,18 +208,22 @@ export default function Hero() {
       {/* cinematic vignette + faint C-arcs */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(ellipse 90% 70% at 50% 38%, rgba(242,242,242,0.045), transparent 60%)" }}
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 70% at 50% 38%, rgba(242,242,242,0.045), transparent 60%)",
+        }}
         aria-hidden="true"
       />
       <div className="c-arc left-[-18rem] top-[-18rem] h-[36rem] w-[36rem] opacity-40" aria-hidden="true" />
       <div className="c-arc right-[-22rem] bottom-[-22rem] h-[44rem] w-[44rem] opacity-25" aria-hidden="true" />
 
-      {/* ---- the box scene — the opening shot, framed tight on the crate ---- */}
+      {/* ---- the box scene — final frame is the default painted state ---- */}
       <svg
         viewBox="120 40 460 330"
-        className="w-full max-w-[26rem] sm:max-w-[38rem] lg:max-w-[46rem]"
+        className="hero-svg w-full max-w-[26rem] sm:max-w-[38rem] lg:max-w-[46rem]"
         role="img"
         aria-label="A wireframe crate opens and the letters B I C rise out of it; the brand dot detaches from the logo and ignites as a spark outside the box"
+        style={{ overflow: "visible" }}
       >
         <defs>
           <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
@@ -130,9 +235,9 @@ export default function Hero() {
             <stop offset="45%" stopColor="#f2f2f2" stopOpacity="0.035" />
             <stop offset="100%" stopColor="#f2f2f2" stopOpacity="0" />
           </linearGradient>
-        </defs>
+          </defs>
 
-        {/* restrained directional key light, falling from upper left */}
+        {/* restrained directional key light */}
         <rect className="hero-key" x="40" y="0" width="460" height="400" fill="url(#heroKey)" />
 
         {/* floor shadow */}
@@ -141,31 +246,79 @@ export default function Hero() {
         {/* interior glow, revealed when the lid opens */}
         <circle className="hero-glow" cx="294" cy="252" r="120" fill="url(#heroGlow)" />
 
-        {/* crate — lid (drawn first so walls overlay the hinge) */}
+        {/* crate — lid (drawn first so walls can sit under the hinge line) */}
         <g className="hero-lid">
-          <path className="hero-edge" pathLength={1} strokeDasharray={1} d="M210 194 L390 194 L364 168 L184 168 Z"
-            fill="var(--lift)" fillOpacity="0.35" stroke="var(--paper-75)" strokeWidth="1.5" />
+          <path
+            className="hero-lid-fill"
+            d="M210 194 L390 194 L364 168 L184 168 Z"
+            fill="var(--lift)"
+            stroke="none"
+          />
+          <path
+            className="hero-lid-edge"
+            pathLength={1}
+            strokeDasharray={1}
+            d="M210 194 L390 194 L364 168 L184 168 Z"
+            fill="none"
+            stroke="var(--paper-75)"
+            strokeWidth="1.6"
+            strokeLinejoin="miter"
+          />
         </g>
 
-        {/* crate — left wall + front wall + back edge */}
-        <path className="hero-edge" pathLength={1} strokeDasharray={1} d="M210 194 L184 168 L184 288 L210 314"
-          fill="none" stroke="var(--gray)" strokeWidth="1.5" />
-        <path className="hero-edge" pathLength={1} strokeDasharray={1} d="M210 194 L390 194 L390 314 L210 314 Z"
-          fill="var(--deep)" fillOpacity="0.6" stroke="var(--paper-75)" strokeWidth="1.5" />
-        <path className="hero-edge" pathLength={1} strokeDasharray={1} d="M390 194 L364 168"
-          fill="none" stroke="var(--gray)" strokeWidth="1.5" />
-        <path className="hero-edge" pathLength={1} strokeDasharray={1} d="M390 314 L364 288 L184 288"
-          fill="none" stroke="var(--gray-75)" strokeWidth="1.5" />
+        {/* crate — walls (body edges, animated separately from the lid) */}
+        <path
+          className="hero-edge"
+          pathLength={1}
+          strokeDasharray={1}
+          d="M210 194 L184 168 L184 288 L210 314"
+          fill="none"
+          stroke="var(--gray)"
+          strokeWidth="1.5"
+        />
+        <path
+          className="hero-edge"
+          pathLength={1}
+          strokeDasharray={1}
+          d="M210 194 L390 194 L390 314 L210 314 Z"
+          fill="var(--deep)"
+          fillOpacity="0.55"
+          stroke="var(--paper-75)"
+          strokeWidth="1.5"
+        />
+        <path
+          className="hero-edge"
+          pathLength={1}
+          strokeDasharray={1}
+          d="M390 194 L364 168"
+          fill="none"
+          stroke="var(--gray)"
+          strokeWidth="1.5"
+        />
+        <path
+          className="hero-edge"
+          pathLength={1}
+          strokeDasharray={1}
+          d="M390 314 L364 288 L184 288"
+          fill="none"
+          stroke="var(--gray-75)"
+          strokeWidth="1.5"
+        />
 
-        {/* letters rising from inside */}
+        {/* letters rising from inside the crate volume (GSAP drives y 300 → 158) */}
         <g className="font-display" fill="var(--paper)" fontWeight={900} fontSize="72" letterSpacing="-2">
-          <text className="hero-letter" x="232" y="158">B</text>
-          <text className="hero-letter" x="284" y="158">I</text>
-          <text className="hero-letter" x="306" y="158">C</text>
+          <text className="hero-letter" x="232" y="158">
+            B
+          </text>
+          <text className="hero-letter" x="284" y="158">
+            I
+          </text>
+          <text className="hero-letter" x="306" y="158">
+            C
+          </text>
         </g>
 
-        {/* the brand dot — begins as the period of the logo, then detaches and
-            settles OUTSIDE the box, ignited. Final (default) state shown here */}
+        {/* brand dot — default = ignited outside the box */}
         <circle className="hero-dot-glow" cx="446" cy="120" r="26" fill="url(#heroGlow)" />
         <circle className="hero-dot" cx="446" cy="120" r="7" fill="var(--paper)" />
       </svg>
@@ -195,9 +348,13 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* scroll cue — hairline with dot (desktop only; collides with stacked CTAs on mobile) */}
-      <div className="hero-cue absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex" aria-hidden="true">
-        <span className="text-[0.5625rem] font-semibold uppercase tracking-[0.32em] text-gray-brand">Scroll</span>
+      <div
+        className="hero-cue absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex"
+        aria-hidden="true"
+      >
+        <span className="text-[0.5625rem] font-semibold uppercase tracking-[0.32em] text-gray-brand">
+          Scroll
+        </span>
         <span className="h-10 w-px bg-[var(--gray-50)]" />
         <span className="h-1.5 w-1.5 rounded-full bg-[var(--gray)]" />
       </div>
